@@ -1,0 +1,122 @@
+<html>
+<head>
+    <title>CSCI-510: Park Scene</title>
+    <!-- vertex Shader -->
+    <script id="shader" type="wgsl">
+        struct VertexOutput {
+                      @builtin(position) aVertexPosition: vec4<f32>
+          };
+
+         struct UniformStruct {
+             theta : vec3<f32>,
+             scale : f32
+         };
+
+         @group(0) @binding(0) var<uniform> uniformStruct : UniformStruct;
+
+         @vertex
+            fn vs_main(
+                      @location(0) inPos: vec3<f32>) -> VertexOutput {
+            var out: VertexOutput;
+
+            return out;
+           }
+
+           @fragment
+           fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+                var fragColor = vec4<f32> (1.0, 1.0, 1.0, 1.0 );
+                return fragColor;
+           }
+
+    </script>
+
+    <script type="text/javascript" src="./createParkTree.js"></script>
+
+    <!-- include the main tesselation functions -->
+    <script type="text/javascript" src="./parkSceneMain.js"></script>
+
+    <!-- keyboard functions -->
+    <script type="text/javascript">
+
+        function gotKey(event) {
+
+            var key = event.key;
+
+            //  incremental rotation
+            if (key == 'x')
+                angles[0] -= angleInc;
+            else if (key == 'y')
+                angles[1] -= angleInc;
+            else if (key == 'z')
+                angles[2] -= angleInc;
+            else if (key == 'X')
+                angles[0] += angleInc;
+            else if (key == 'Y')
+                angles[1] += angleInc;
+            else if (key == 'Z')
+                angles[2] += angleInc;
+
+            // scale control
+            else if (key == '+') {
+                scale *= 1.0/scaleInc;
+            }
+            else if (key == '-') {
+                scale *= scaleInc;
+            }
+            else if (key == 'p'){
+              // generate a park
+            }
+
+            //draw();
+        }
+
+    </script>
+
+    <script type="text/javascript">
+        // Call init once the webpage has loaded
+        window.onload = init;
+    </script>
+</head>
+
+<body>
+  <h1>CSCI-510: Park Scene</h1>
+  <table>
+      <tr>
+          <td><canvas id="webgpu" width="800" height="800">
+            Your browser does not support the HTML5 canvas element.
+          </canvas></td>
+          
+          <td>
+              <h3>Controls</h3>
+              
+              <table border="1">
+                  <tbody>
+                      <tr>
+                          <td>x, y, z</td>
+                          <td>Rotate the current shape forward about the x, y, or z axis</td>
+                      </tr>
+                      <tr>
+                          <td>X, Y, Z</td>
+                          <td>Rotate the current shape backward about the x, y, or z axis</td>
+                      </tr>
+                      <tr>
+                          <td>+</td>
+                          <td>Positive scale (zoom in)</td>
+                      </tr>
+                      <tr>
+                          <td>-</td>
+                          <td>Negative scale (zoom out)</td>
+                      </tr>
+                      <tr>
+                          <td>p</td>
+                          <td>Generate a park scene</td>
+                      </tr>
+                  </tbody>
+              </table>
+              
+          </td>
+      </tr>
+  </table>
+</body>
+</html>
+
