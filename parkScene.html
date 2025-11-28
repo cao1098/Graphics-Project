@@ -1,6 +1,7 @@
 <html>
 <head>
     <title>CSCI-510: Park Scene</title>
+
     <!-- vertex Shader -->
     <script id="shader" type="wgsl">
         struct VertexOutput {
@@ -18,7 +19,39 @@
             fn vs_main(
                       @location(0) inPos: vec3<f32>) -> VertexOutput {
             var out: VertexOutput;
+            // Compute the sines and cosines of each rotation
+            // about each axis - must be converted into radians first
+            var c = cos(  uniformStruct.theta );
+            var s = sin(  uniformStruct.theta );
 
+            // translation matrix
+            var trans = mat4x4<f32> ( 1.0,  0.0,  0.0,  0.0,
+                             0.0,  1.0,  0.0,  0.0,
+                             0.0, 0.0,  1.0,  0.0,
+                             0.0,  0.0, 0.0,  1.0 );
+            // scale matrix
+            var scale = mat4x4<f32> ( uniformStruct.scale,  0.0,  0.0,  0.0,
+                             0.0,  uniformStruct.scale,  0.0,  0.0,
+                             0.0, 0.0,  uniformStruct.scale,  0.0,
+                             0.0,  0.0,  0.0,  1.0 );
+            // rotation matrices
+            var rx = mat4x4<f32> ( 1.0,  0.0,  0.0,  0.0,
+                             0.0,  c.x,  s.x,  0.0,
+                             0.0, -s.x,  c.x,  0.0,
+                             0.0,  0.0,  0.0,  1.0 );
+
+            var ry = mat4x4<f32> ( c.y,  0.0, -s.y,  0.0,
+                             0.0,  1.0,  0.0,  0.0,
+                             s.y,  0.0,  c.y,  0.0,
+                             0.0,  0.0,  0.0,  1.0 );
+
+            var rz = mat4x4<f32> ( c.z,  s.z,  0.0,  0.0,
+                            -s.z,  c.z,  0.0,  0.0,
+                             0.0,  0.0,  1.0,  0.0,
+                             0.0,  0.0,  0.0,  1.0 );
+
+
+            out.aVertexPosition =  trans * rz * ry * rx * scale * vec4<f32>(inPos.x, inPos.y, inPos.z, 1);
             return out;
            }
 
@@ -29,7 +62,8 @@
            }
 
     </script>
-
+   
+    <!-- include the shape creation functions -->
     <script type="text/javascript" src="./createParkTree.js"></script>
 
     <!-- include the main tesselation functions -->
@@ -63,11 +97,18 @@
             else if (key == '-') {
                 scale *= scaleInc;
             }
-            else if (key == 'p'){
-              // generate a park
+            // reset
+            else if (key == 'r' || key == 'R') {
+                angles[0] = anglesReset[0];
+                angles[1] = anglesReset[1];
+                angles[2] = anglesReset[2];
+                scale = scaleReset;
+            }
+            else if (key == 'p') {
+                createParkScene();
             }
 
-            //draw();
+            draw();
         }
 
     </script>
@@ -93,11 +134,11 @@
                   <tbody>
                       <tr>
                           <td>x, y, z</td>
-                          <td>Rotate the current shape forward about the x, y, or z axis</td>
+                          <td>Rotate the current scene forward about the x, y, or z axis</td>
                       </tr>
                       <tr>
                           <td>X, Y, Z</td>
-                          <td>Rotate the current shape backward about the x, y, or z axis</td>
+                          <td>Rotate the current scene backward about the x, y, or z axis</td>
                       </tr>
                       <tr>
                           <td>+</td>
@@ -111,12 +152,19 @@
                           <td>p</td>
                           <td>Generate a park scene</td>
                       </tr>
+                      <tr>
+                          <td>r, R</td>
+                          <td>Reset the scene to its original orientation and scale</td>
+                      </tr>
                   </tbody>
               </table>
               
           </td>
       </tr>
   </table>
+  
+  
+
 </body>
 </html>
 
