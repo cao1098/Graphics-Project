@@ -145,9 +145,10 @@ function drawGrammarPoints(grammarArray, angleToUse) {
 function drawLeaf(position){
   // Select amount of leaves to draw
   // for each leaf pick a random size and a random angle to draw it at
-  for(let i = 0; i <= 5; i++){
+  // making size smaller for smaller iterations might be good too
+  for(let i = 0; i <= 10; i++){
     let leafAngle = Math.floor(Math.random() * 360);
-    let leafSize = Math.random() * 0.05;
+    let leafSize = Math.random() * 0.15;
     console.log("Drawing a leaf");
     // Generate triangle size
     length = 0.025;

@@ -110,7 +110,7 @@ function setShaderInfo() {
     // Angle can be between 5 and 55
     // initial length between 0.1 and 0.5
     // trees will have a random assortment of triangles on the ends of the branches
-    iterations = 5;
+    iterations = 3;
     angleToUse = 25;
     initial_length = 0.1;
     createTree(iterations);
