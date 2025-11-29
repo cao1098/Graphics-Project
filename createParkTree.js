@@ -2,17 +2,15 @@ let initial_length,
     initial_radius,
     angleToUse,
 	rules;
-var iterations = 1;
+var iterations;
 
 // 
 // initialize grammar variables
 //
 function initializeGrammarVars() {
     // how to set line width?????
-    initial_length =0.1;
-    initial_radius = 1.0;
-	angleToUse = 45.0;
-    iterations = 4;
+    // these will get randomized
+    initial_radius = 5.0;
     rules = [];
 }
 
@@ -66,7 +64,6 @@ function createGrammar() {
     let start = "0";
     rules[0] = "1[0]0";
     rules[1] = "11";
-    angleToUse = 45.0;
 
 	let grammar = run(iterations, start);
 	return grammar;
@@ -75,7 +72,8 @@ function createGrammar() {
 //
 // l-system drawing code
 //
-function drawGrammarPoints(grammarArray) {
+function drawGrammarPoints(grammarArray, angleToUse) {
+  //set angle to use here
 
 	// to push and pop location and angle
 	let positions = [];
@@ -107,7 +105,9 @@ function drawGrammarPoints(grammarArray) {
 				// set up for the next draw
 				position = newPosition;
 				posx = newPosition[0];
-				posy = newPosition[1];			
+				posy = newPosition[1];
+        drawLeaf(position);
+        
 				break;
 			case '1':
 				// draw a line 
@@ -123,23 +123,48 @@ function drawGrammarPoints(grammarArray) {
 				posy = newPosition[1];
 				break;
 			case '[':
-				//[: push position and angle, turn left 45 degrees
+				//[: push position and angle, turn left angleToUse degrees
 				positions.push(posy);
 				positions.push(posx);
 				angles.push(angle);
-				angle -= 45;
+				angle -= angleToUse;
 				break;
 			case ']':
-				//]: pop position and angle, turn right 45 degrees
+				//]: pop position and angle, turn right angleToUse degrees
 				posx = positions.pop();
 				posy = positions.pop();
 				position = [posx, posy, position[2]];
 				angle = angles.pop();
-				angle += 45;
+				angle += angleToUse;
 				break;
-			default: break;
+			default:break;
 		}
 	}
+}
+
+function drawLeaf(position){
+  // Select amount of leaves to draw
+  // for each leaf pick a random size and a random angle to draw it at
+  for(let i = 0; i <= 5; i++){
+    let leafAngle = Math.floor(Math.random() * 360);
+    let leafSize = Math.random() * 0.05;
+    console.log("Drawing a leaf");
+    // Generate triangle size
+    length = 0.025;
+    let p1 = [position[0], position[1], position[2]];
+    let p2 = [position[0] - leafSize/2, position[1] + leafSize, position[2]];
+    let p3 = [position[0] + leafSize/2, position[1] + leafSize, position[2]];
+
+    p2 = rotate(p1, p2, leafAngle);
+    p3 = rotate(p1, p3, leafAngle);
+    leafPoints.push(
+      // Triangle ABC
+      p1[0], p1[1], p1[2],
+      p2[0], p2[1], p1[2],
+      p3[0], p3[1], p1[2]
+  );
+  }
+  
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -24,11 +24,14 @@ let verticesSize,
     drawingLeft,
     canvas,
     points,
+    leafPoints,
     uniformValues,
-    uniformBindGroup;
+    uniformBindGroup,
+    leafPipeline;
   
   // buffers
   let myVertexBuffer = null;
+  let myLeafBuffer = null;
   let uniformBuffer;
 
   // Other globals with default values
@@ -98,17 +101,32 @@ function setShaderInfo() {
   }
 
   // general call to make and bind a simple lsystem
-function createParkScene() {
+  function createParkScene(){
+    // STEP 1: Determine how many trees will be drawn
+    // STEP 2: for each tree drawn, generate some random params for that tree, height, # branches, etc.
+
+    // For now create one tree, w/ random params
+    // Iterations can be between 1 and 7
+    // Angle can be between 5 and 55
+    // initial length between 0.1 and 0.5
+    // trees will have a random assortment of triangles on the ends of the branches
+    iterations = 5;
+    angleToUse = 25;
+    initial_length = 0.1;
+    createTree(iterations);
+  }
+  function createTree(iterations) {
 
     // Call the functions in an appropriate order
     setShaderInfo();
 
     // clear your points and elements
     points = [];
+    leafPoints = [];
     
     // make lsystem
-    let grammar = createGrammar();
-    drawGrammarPoints(grammar);
+    let grammar = createGrammar(iterations);
+    drawGrammarPoints(grammar, angleToUse, initial_length);
 
     // create and bind vertex and other buffers
     // set up the attribute we'll use for the vertices
@@ -131,11 +149,20 @@ function createParkScene() {
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
     };
+    const leafBufferDesc = {
+        size: leafPoints.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+    };
     myVertexBuffer = device.createBuffer(vertexBufferDesc);
+    myLeafBuffer = device.createBuffer(leafBufferDesc);
+    let leafWriteArray = new Float32Array(myLeafBuffer.getMappedRange()); 
     let writeArray =
         new Float32Array(myVertexBuffer.getMappedRange());
 
     writeArray.set(points); // this copies the buffer
+    leafWriteArray.set(leafPoints);
+    myLeafBuffer.unmap();
     myVertexBuffer.unmap();
 
    
@@ -178,6 +205,32 @@ function createParkScene() {
             cullMode: 'back'
         }
     };
+
+    const leafPipelineDesc = {
+      layout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vs_main',
+        buffers: [vertexBufferLayoutDesc]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fs_main',
+        targets: [colorState]
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth24plus'
+      },
+      primitive: {
+        topology: 'triangle-list',
+        frontFace: 'cw',
+        cullMode: 'back'
+      }
+    };
+
+    leafPipeline = device.createRenderPipeline(leafPipelineDesc);
 
     pipeline = device.createRenderPipeline(pipelineDesc);
 
@@ -252,6 +305,11 @@ function draw() {
     passEncoder.setBindGroup(0, uniformBindGroup);
     passEncoder.setVertexBuffer(0, myVertexBuffer);
     passEncoder.draw(points.length/3);
+
+    
+    passEncoder.setPipeline(leafPipeline);
+    passEncoder.setVertexBuffer(0, myLeafBuffer);
+    passEncoder.draw(leafPoints.length / 3);
     passEncoder.end();
 
     // submit the pass to the device
