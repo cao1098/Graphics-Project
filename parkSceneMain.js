@@ -29,7 +29,8 @@ let verticesSize,
     uniformBindGroup,
     leafPipeline,
     groundPoints,
-    groundPipeline;
+    groundPipeline,
+    textureData;
   
   // buffers
   let myVertexBuffer = null;
@@ -201,6 +202,22 @@ function setShaderInfo() {
                 binding: 0,
                 visibility: GPUShaderStage.VERTEX,
                 buffer: {}
+            },
+            {
+                binding: 1,
+                visibility: GPUShaderStage.FRAGMENT,
+                sampler: {
+                    type: "non-filtering",
+                },
+            },
+            {
+                binding: 2,
+                visibility: GPUShaderStage.FRAGMENT,
+                texture: {
+                    sampleType: "unfilterable-float",
+                    viewDimension: "2d",
+                    multisampled: false,
+                },
             }
         ]
     });
@@ -301,17 +318,51 @@ function setShaderInfo() {
     // copy the values from JavaScript to the GPU
     device.queue.writeBuffer(uniformBuffer, 0, uniformValues);
 
+    // texture creation 
+    const kTextureWidth = 7;
+    const kTextureHeight = 7;
+    const g = [0, 128, 0, 255];  // green
+    const l = [0, 255, 0, 255];  // white
+    const b = [0, 0, 255, 255];  // blue
+
+    textureData = new Uint8Array([
+            l, l, l, l, l, l, l,
+            l, g, g, g, g, g, l,
+            l, g, g, g, g, g, l,
+            l, g, g, g, g, g, l,
+            l, g, g, g, g, g, l,
+            l, g, g, g, g, g, l,
+            l, l, l, l, l, l, l,
+        ].flat());
+    
+    let texture = device.createTexture({
+            size: [kTextureWidth, kTextureHeight],
+            format: 'rgba8unorm',
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+        });
+
+    device.queue.writeTexture(
+            { texture },
+            textureData,
+            { bytesPerRow: kTextureWidth * 4 },
+            { width: kTextureWidth, height: kTextureHeight },
+    );
+
+    let samplerTex = device.createSampler();
+
     uniformBindGroup = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(0),
-        entries: [
-            {
-                binding: 0,
-                resource: {
-                    buffer: uniformBuffer,
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [
+                {
+                    binding: 0,
+                    resource: {
+                        buffer: uniformBuffer,
+                    }
                 },
-            },
-        ],
-    });
+                { binding: 1, resource: samplerTex },
+                { binding: 2, resource: texture.createView() },
+            ]
+        });
 
     // indicate a redraw is required.
     updateDisplay = true;
