@@ -32,6 +32,7 @@ let verticesSize,
     groundPipeline,
     textureData,
     uvs,
+    uvsGround,
     bary,
     indices;
   
@@ -42,7 +43,7 @@ let verticesSize,
   let myBaryBuffer = null;
   let myIndexBuffer = null;
   let uniformBuffer;
-  let myUvBuffer;
+  let myUvBuffer, myUvGroundBuffer;
 
   // Other globals with default values
   var updateDisplay = true;
@@ -183,6 +184,14 @@ for (let i = 0; i < 528; i+=8) {
     uvs[i+6] = 1.0;
     uvs[i+7] = 0.0;
 }
+uvsGround = [
+    0.0, 0.0,
+    0.0, 1.0,
+    1.0, 0.0,
+    1.0, 0.0,
+    0.0, 1.0,
+    1.0, 1.0,
+];
     indices = [];
     bary = [];
     addTriangle(
@@ -263,7 +272,7 @@ for (let i = 0; i < 528; i+=8) {
         arrayStride: Float32Array.BYTES_PER_ELEMENT * 2, // sizeof(float) * 2 floats
         stepMode: 'vertex'
     };
-    
+
     // create and bind bary buffer
     const baryAttribDesc = {
         shaderLocation: 1, // @location(1) in vertex shader
@@ -290,6 +299,18 @@ for (let i = 0; i < 528; i+=8) {
 
     writeArrayUvs.set(uvs); // this copies the buffer
     myUvBuffer.unmap();
+
+    const uvGroundBufferDesc = {
+        size: uvsGround.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+    };
+    myUvGroundBuffer = device.createBuffer(uvGroundBufferDesc);
+    let writeGroundArrayUvs =
+        new Float32Array(myUvGroundBuffer.getMappedRange());
+
+        writeGroundArrayUvs.set(uvsGround); // this copies the buffer
+    myUvGroundBuffer.unmap();
 
     const myBaryBufferDesc = {
         size: bary.length * Float32Array.BYTES_PER_ELEMENT,
@@ -348,6 +369,15 @@ for (let i = 0; i < 528; i+=8) {
             },
             {
                 binding: 3,
+                visibility: GPUShaderStage.FRAGMENT,
+                texture: {
+                    sampleType: "float",
+                    viewDimension: "2d",
+                    multisampled: false,
+                },
+            },
+            {
+                binding: 4,
                 visibility: GPUShaderStage.FRAGMENT,
                 texture: {
                     sampleType: "float",
@@ -420,7 +450,7 @@ for (let i = 0; i < 528; i+=8) {
         },
         fragment: {
             module: shaderModule,
-            entryPoint: 'fs_main',
+            entryPoint: 'fs_main3',
             targets: [colorState]
         },
         depthStencil: {
@@ -502,6 +532,23 @@ for (let i = 0; i < 528; i+=8) {
         { width: imageSource.width, height: imageSource.height, depthOrArrayLayers: 1 },
     );
 
+    const url3 = './ground_texture.jpg';
+    let imageSource3 = await loadImageBitmap(url3);
+    let texture3 = device.createTexture({
+        label: "image",
+        format: 'rgba8unorm',
+        size: [imageSource3.width, imageSource3.height],
+        usage: GPUTextureUsage.TEXTURE_BINDING |
+            GPUTextureUsage.COPY_DST |
+            GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+    
+    device.queue.copyExternalImageToTexture(
+        { source: imageSource3, flipY: true },
+        { texture: texture3 },
+        { width: imageSource3.width, height: imageSource3.height, depthOrArrayLayers: 1 },
+    );
+
     let samplerTex = device.createSampler();
 
     uniformBindGroup = device.createBindGroup({
@@ -516,6 +563,7 @@ for (let i = 0; i < 528; i+=8) {
                 { binding: 1, resource: samplerTex },
                 { binding: 2, resource: texture.createView() },
                 { binding: 3, resource: texture2.createView() },
+                { binding: 4, resource: texture3.createView() },
             ]
         });
 
@@ -576,7 +624,7 @@ function draw() {
     passEncoder.setVertexBuffer(1, myUvBuffer);
     passEncoder.draw(leafPoints.length / 3);
 
-    console.log(leafPoints, uvs);
+    console.log(groundPoints, uvs);
 
     passEncoder.setPipeline(pipeline);
     passEncoder.setVertexBuffer(0, myVertexBuffer);
@@ -585,6 +633,7 @@ function draw() {
     passEncoder.setPipeline(groundPipeline);
     passEncoder.setVertexBuffer(0, myGroundBuffer);
     passEncoder.setVertexBuffer(1, myBaryBuffer);
+    passEncoder.setVertexBuffer(1, myUvGroundBuffer);
     passEncoder.setIndexBuffer(myIndexBuffer, "uint16");
     passEncoder.drawIndexed(indices.length, 1);
     //passEncoder.draw(groundPoints.length / 3);
