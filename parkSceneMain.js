@@ -31,12 +31,16 @@ let verticesSize,
     groundPoints,
     groundPipeline,
     textureData,
-    uvs;
+    uvs,
+    bary,
+    indices;
   
   // buffers
   let myVertexBuffer = null;
   let myLeafBuffer = null;
   let myGroundBuffer = null;
+  let myBaryBuffer = null;
+  let myIndexBuffer = null;
   let uniformBuffer;
   let myUvBuffer;
 
@@ -134,14 +138,7 @@ function setShaderInfo() {
     // clear your points and elements
     points = [];
     leafPoints = [];
-    groundPoints = [
-    -1, 0, -1,   
-    -1, 0,  1,   
-     1, 0, -1,   
-    -1, 0,  1,   
-     1, 0,  1,   
-     1, 0, -1    
-];
+    groundPoints = [];
 // Inline uvs
 uvs = [
     // front
@@ -175,6 +172,18 @@ uvs = [
     1.0, 1.0,
     1.0, 0.0,
 ];
+    indices = [];
+    bary = [];
+    addTriangle(
+        -0.25, 0, -0.25,   
+        -0.25, 0,  0.25,   
+        0.25, 0, -0.25);
+    addTriangle(   
+        0.25, 0, -0.25,
+        -0.25, 0,  0.25,
+        0.25, 0, 0.25  
+        );
+    
 
     // make lsystem
     let grammar = createGrammar(iterations);
@@ -243,6 +252,20 @@ uvs = [
         arrayStride: Float32Array.BYTES_PER_ELEMENT * 2, // sizeof(float) * 2 floats
         stepMode: 'vertex'
     };
+    
+    // create and bind bary buffer
+    const baryAttribDesc = {
+        shaderLocation: 1, // @location(1) in vertex shader
+        offset: 0,
+        format: 'float32x3' // 3 floats: x,y,z
+    };
+
+    // this sets up our buffer layout
+    const myBaryBufferLayoutDesc = {
+        attributes: [baryAttribDesc],
+        arrayStride: Float32Array.BYTES_PER_ELEMENT * 3, // 3 bary's
+        stepMode: 'vertex'
+    };
 
     // buffer layout and filling
     const uvBufferDesc = {
@@ -256,6 +279,36 @@ uvs = [
 
     writeArrayUvs.set(uvs); // this copies the buffer
     myUvBuffer.unmap();
+    
+    const myBaryBufferDesc = {
+        size: bary.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+    };
+
+    myBaryBuffer = device.createBuffer(myBaryBufferDesc);
+    let writeBaryArray =
+        new Float32Array(myBaryBuffer.getMappedRange());
+
+    writeBaryArray.set(bary); // this copies the buffer
+    myBaryBuffer.unmap();
+
+    if (indices.length % 2 != 0) {
+        indices.push(indices[indices.length-1]);
+    }
+
+    const myIndexBufferDesc = {
+        size: indices.length * Uint16Array.BYTES_PER_ELEMENT,  
+        usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+    };
+
+    myIndexBuffer = device.createBuffer(myIndexBufferDesc);
+    let writeIndexArray =
+        new Uint16Array(myIndexBuffer.getMappedRange());
+
+    writeIndexArray.set(indices); // this copies the buffer
+    myIndexBuffer.unmap();
 
    
     // Set up the uniform var
@@ -343,7 +396,7 @@ uvs = [
       primitive: {
         topology: 'triangle-list',
         frontFace: 'cw',
-        cullMode: 'back'
+        cullMode: 'none'
       }
     };
 
@@ -352,7 +405,7 @@ uvs = [
         vertex: {
             module: shaderModule,
             entryPoint: 'vs_main',
-            buffers: [vertexBufferLayoutDesc]
+            buffers: [vertexBufferLayoutDesc, myBaryBufferLayoutDesc]
         },
         fragment: {
             module: shaderModule,
@@ -367,7 +420,7 @@ uvs = [
         primitive: {
             topology: 'triangle-list',  
             frontFace: 'cw', // this doesn't matter for lines
-            cullMode: 'back'
+            cullMode: 'none'
         }
     };
 
@@ -519,7 +572,10 @@ function draw() {
 
     passEncoder.setPipeline(groundPipeline);
     passEncoder.setVertexBuffer(0, myGroundBuffer);
-    passEncoder.draw(groundPoints.length / 3);
+    passEncoder.setVertexBuffer(1, myBaryBuffer);
+    passEncoder.setIndexBuffer(myIndexBuffer, "uint16");
+    passEncoder.drawIndexed(indices.length, 1);
+    //passEncoder.draw(groundPoints.length / 3);
 
     passEncoder.end();
 
@@ -544,4 +600,31 @@ async function init() {
 
     // do a draw
     draw();
+}
+
+function addTriangle (x0,y0,z0,x1,y1,z1,x2,y2,z2) {
+
+    
+    var nverts = groundPoints.length / 3;
+    
+    // push first vertex
+    groundPoints.push(x0);  bary.push (1.0);
+    groundPoints.push(y0);  bary.push (0.0);
+    groundPoints.push(z0);  bary.push (0.0);
+    indices.push(nverts);
+    nverts++;
+    
+    // push second vertex
+    groundPoints.push(x1); bary.push (0.0);
+    groundPoints.push(y1); bary.push (1.0);
+    groundPoints.push(z1); bary.push (0.0);
+    indices.push(nverts);
+    nverts++
+    
+    // push third vertex
+    groundPoints.push(x2); bary.push (0.0);
+    groundPoints.push(y2); bary.push (0.0);
+    groundPoints.push(z2); bary.push (1.0);
+    indices.push(nverts);
+    nverts++;
 }
