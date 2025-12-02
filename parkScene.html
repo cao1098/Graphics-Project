@@ -21,7 +21,7 @@
 
          @vertex
             fn vs_main(
-                      @location(0) inPos: vec3<f32>) -> VertexOutput {//, @location(1) inUv: vec2<f32>) -> VertexOutput {
+                      @location(0) inPos: vec3<f32>, @location(1) inUv: vec2<f32>) -> VertexOutput {
             var out: VertexOutput;
             // Compute the sines and cosines of each rotation
             // about each axis - must be converted into radians first
@@ -58,7 +58,7 @@
 
 
             out.aVertexPosition =  trans * rz * ry * rx * scale * vec4<f32>(inPos.x, inPos.y, inPos.z, 1); 
-                //out.uv = inUv;
+            out.uv = inUv;
             return out;
            }
 
