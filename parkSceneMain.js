@@ -111,7 +111,7 @@ function setShaderInfo() {
 
   }
 
-  // general call to make and bind a simple lsystem
+  // create the park scene
   async function createParkScene(){
     iterations = Math.floor(Math.random() * 5) + 1;
     angleToUse = Math.floor(Math.random() * 51) + 5;
@@ -130,52 +130,9 @@ function setShaderInfo() {
     points = [];
     leafPoints = [];
     groundPoints = [];
-// Inline uvs
-uvs = [
-    // front
-    0.0, 0.0,
-    0.0, 1.0,
-    1.0, 1.0,
-    1.0, 0.0,
-    // back
-    0.0, 0.0,
-    0.0, 1.0,
-    1.0, 1.0,
-    1.0, 0.0,
-    // left
-    0.0, 0.0,
-    0.0, 1.0,
-    1.0, 1.0,
-    1.0, 0.0,
-    // right
-    0.0, 0.0,
-    0.0, 1.0,
-    1.0, 1.0,
-    1.0, 0.0,
-    // top
-    0.0, 0.0,
-    0.0, 1.0,
-    1.0, 1.0,
-    1.0, 0.0,
-    // bottom
-    0.0, 0.0,
-    0.0, 1.0,
-    1.0, 1.0,
-    1.0, 0.0,
-];
-
-
-
-uvsGround = [
-    0.0, 0.0,
-    0.0, 1.0,
-    1.0, 0.0,
-    1.0, 0.0,
-    0.0, 1.0,
-    1.0, 1.0,
-];
     indices = [];
     bary = [];
+
     addTriangle(
         -0.25, 0, -0.25,   
         -0.25, 0,  0.25,   
@@ -185,23 +142,31 @@ uvsGround = [
         -0.25, 0,  0.25,
         0.25, 0, 0.25  
         );
-    
 
+    uvsGround = [
+        0.0, 0.0,
+        0.0, 1.0,
+        1.0, 0.0,
+        1.0, 0.0,
+        0.0, 1.0,
+        1.0, 1.0,
+    ];
+    
     // make lsystem
     let grammar = createGrammar(iterations);
     drawGrammarPoints(grammar, angleToUse, initial_length);
 
     uvs = new Float32Array(leafPoints.length / 3 * 2);
-for (let i = 0; i < uvs.length; i+=8) {
-    uvs[i] = 0.0;
-    uvs[i+1] = 0.0;
-    uvs[i+2] = 0.0;
-    uvs[i+3] = 1.0;
-    uvs[i+4] = 1.0;
-    uvs[i+5] = 1.0;
-    uvs[i+6] = 1.0;
-    uvs[i+7] = 0.0;
-}
+    for (let i = 0; i < uvs.length; i+=8) {
+        uvs[i] = 0.0;
+        uvs[i+1] = 0.0;
+        uvs[i+2] = 0.0;
+        uvs[i+3] = 1.0;
+        uvs[i+4] = 1.0;
+        uvs[i+5] = 1.0;
+        uvs[i+6] = 1.0;
+        uvs[i+7] = 0.0;
+    }
 
     // create and bind vertex and other buffers
     // set up the attribute we'll use for the vertices
@@ -253,35 +218,18 @@ for (let i = 0; i < uvs.length; i+=8) {
     myGroundBuffer.unmap();
 
     // set up the uv buffer
-    // set up the attribute we'll use for the vertices
     const uvAttribDesc = {
         shaderLocation: 1, // @location(1) in vertex shader
         offset: 0,
         format: 'float32x2' // 2 floats: u,v
     };
 
-    // this sets up our buffer layout
     const uvBufferLayoutDesc = {
         attributes: [uvAttribDesc],
         arrayStride: Float32Array.BYTES_PER_ELEMENT * 2, // sizeof(float) * 2 floats
         stepMode: 'vertex'
     };
 
-    // create and bind bary buffer
-    const baryAttribDesc = {
-        shaderLocation: 1, // @location(1) in vertex shader
-        offset: 0,
-        format: 'float32x3' // 3 floats: x,y,z
-    };
-
-    // this sets up our buffer layout
-    const myBaryBufferLayoutDesc = {
-        attributes: [baryAttribDesc],
-        arrayStride: Float32Array.BYTES_PER_ELEMENT * 3, // 3 bary's
-        stepMode: 'vertex'
-    };
-
-    // buffer layout and filling
     const uvBufferDesc = {
         size: uvs.length * Float32Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -303,8 +251,21 @@ for (let i = 0; i < uvs.length; i+=8) {
     let writeGroundArrayUvs =
         new Float32Array(myUvGroundBuffer.getMappedRange());
 
-        writeGroundArrayUvs.set(uvsGround); // this copies the buffer
+    writeGroundArrayUvs.set(uvsGround); // this copies the buffer
     myUvGroundBuffer.unmap();
+
+    // create and bind bary buffer
+    const baryAttribDesc = {
+        shaderLocation: 1, // @location(1) in vertex shader
+        offset: 0,
+        format: 'float32x3' // 3 floats: x,y,z
+    };
+
+    const myBaryBufferLayoutDesc = {
+        attributes: [baryAttribDesc],
+        arrayStride: Float32Array.BYTES_PER_ELEMENT * 3, // 3 bary's
+        stepMode: 'vertex'
+    };
 
     const myBaryBufferDesc = {
         size: bary.length * Float32Array.BYTES_PER_ELEMENT,
@@ -316,9 +277,10 @@ for (let i = 0; i < uvs.length; i+=8) {
     let writeBaryArray =
         new Float32Array(myBaryBuffer.getMappedRange());
 
-    writeBaryArray.set(bary); // this copies the buffer
+    writeBaryArray.set(bary); 
     myBaryBuffer.unmap();
 
+    // set up index buffer
     if (indices.length % 2 != 0) {
         indices.push(indices[indices.length-1]);
     }
@@ -333,10 +295,9 @@ for (let i = 0; i < uvs.length; i+=8) {
     let writeIndexArray =
         new Uint16Array(myIndexBuffer.getMappedRange());
 
-    writeIndexArray.set(indices); // this copies the buffer
+    writeIndexArray.set(indices); 
     myIndexBuffer.unmap();
 
-   
     // Set up the uniform var
     let uniformBindGroupLayout = device.createBindGroupLayout({
         entries: [
@@ -454,15 +415,13 @@ for (let i = 0; i < uvs.length; i+=8) {
         },
         primitive: {
             topology: 'triangle-list',  
-            frontFace: 'cw', // this doesn't matter for lines
+            frontFace: 'cw', 
             cullMode: 'none'
         }
     };
 
-    leafPipeline = device.createRenderPipeline(leafPipelineDesc);
-
     pipeline = device.createRenderPipeline(pipelineDesc);
-
+    leafPipeline = device.createRenderPipeline(leafPipelineDesc);
     groundPipeline = device.createRenderPipeline(groundPipelineDesc);
 
     uniformValues = new Float32Array([0,0,0,0]);
@@ -478,40 +437,30 @@ for (let i = 0; i < uvs.length; i+=8) {
     // copy the values from JavaScript to the GPU
     device.queue.writeBuffer(uniformBuffer, 0, uniformValues);
 
-    // texture creation 
-    const kTextureWidth = 7;
-    const kTextureHeight = 7;
-    const g = [0, 128, 0, 255];  // green
-    const l = [150, 75, 0, 255];  // white
-    const b = [0, 0, 255, 255];  // blue
+    // trunk texture
+    const kTextureWidth = 1;
+    const kTextureHeight = 1;
+    const l = [150, 75, 0, 255];  // brown
 
-    textureData = new Uint8Array([
-            l, l, l, l, l, l, l,
-            l, g, g, g, g, g, l,
-            l, g, g, g, g, g, l,
-            l, g, g, g, g, g, l,
-            l, g, g, g, g, g, l,
-            l, g, g, g, g, g, l,
-            l, l, l, l, l, l, l,
-        ].flat());
+    textureData = new Uint8Array([l].flat());
     
-    let texture = device.createTexture({
+    let texture_trunk = device.createTexture({
             size: [kTextureWidth, kTextureHeight],
             format: 'rgba8unorm',
             usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
         });
 
     device.queue.writeTexture(
-            { texture },
+            { texture: texture_trunk },
             textureData,
             { bytesPerRow: kTextureWidth * 4 },
             { width: kTextureWidth, height: kTextureHeight },
     );
 
-    // now create the texture to render
-    const url = './leaf_texture.jpg';
-    let imageSource = await loadImageBitmap(url);
-    let texture2 = device.createTexture({
+    // leaf texture
+    const url_leaf = './leaf_texture.jpg';
+    let imageSource = await loadImageBitmap(url_leaf);
+    let texture_leaf = device.createTexture({
         label: "image",
         format: 'rgba8unorm',
         size: [imageSource.width, imageSource.height],
@@ -522,13 +471,14 @@ for (let i = 0; i < uvs.length; i+=8) {
     
     device.queue.copyExternalImageToTexture(
         { source: imageSource, flipY: true },
-        { texture: texture2 },
+        { texture: texture_leaf },
         { width: imageSource.width, height: imageSource.height, depthOrArrayLayers: 1 },
     );
 
-    const url3 = './ground_texture.jpg';
-    let imageSource3 = await loadImageBitmap(url3);
-    let texture3 = device.createTexture({
+    // ground texture
+    const url_ground = './ground_texture.jpg';
+    let imageSource3 = await loadImageBitmap(url_ground);
+    let texture_ground = device.createTexture({
         label: "image",
         format: 'rgba8unorm',
         size: [imageSource3.width, imageSource3.height],
@@ -539,7 +489,7 @@ for (let i = 0; i < uvs.length; i+=8) {
     
     device.queue.copyExternalImageToTexture(
         { source: imageSource3, flipY: true },
-        { texture: texture3 },
+        { texture: texture_ground },
         { width: imageSource3.width, height: imageSource3.height, depthOrArrayLayers: 1 },
     );
 
@@ -555,9 +505,9 @@ for (let i = 0; i < uvs.length; i+=8) {
                     }
                 },
                 { binding: 1, resource: samplerTex },
-                { binding: 2, resource: texture.createView() },
-                { binding: 3, resource: texture2.createView() },
-                { binding: 4, resource: texture3.createView() },
+                { binding: 2, resource: texture_trunk.createView() },
+                { binding: 3, resource: texture_leaf.createView() },
+                { binding: 4, resource: texture_ground.createView() },
             ]
         });
 
@@ -612,25 +562,25 @@ function draw() {
     passEncoder = commandEncoder.beginRenderPass(renderPassDesc);
     passEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
     
+    // draw leaves first
     passEncoder.setPipeline(leafPipeline);
     passEncoder.setBindGroup(0, uniformBindGroup);
     passEncoder.setVertexBuffer(0, myLeafBuffer);
     passEncoder.setVertexBuffer(1, myUvBuffer);
     passEncoder.draw(leafPoints.length / 3);
 
-    console.log(groundPoints, uvs);
-
+    // then trunk
     passEncoder.setPipeline(pipeline);
     passEncoder.setVertexBuffer(0, myVertexBuffer);
     passEncoder.draw(points.length/3);
 
+    // then ground
     passEncoder.setPipeline(groundPipeline);
     passEncoder.setVertexBuffer(0, myGroundBuffer);
     passEncoder.setVertexBuffer(1, myBaryBuffer);
     passEncoder.setVertexBuffer(1, myUvGroundBuffer);
     passEncoder.setIndexBuffer(myIndexBuffer, "uint16");
     passEncoder.drawIndexed(indices.length, 1);
-    //passEncoder.draw(groundPoints.length / 3);
 
     passEncoder.end();
 
