@@ -17,6 +17,7 @@
          @group(0) @binding(0) var<uniform> uniformStruct : UniformStruct;
          @group(0) @binding(1) var TexSampler: sampler;
          @group(0) @binding(2) var Texture: texture_2d<f32>;
+         @group(0) @binding(3) var Texture2: texture_2d<f32>;
 
          @vertex
             fn vs_main(
@@ -54,13 +55,19 @@
                              0.0,  0.0,  0.0,  1.0 );
 
 
-            out.aVertexPosition =  trans * rz * ry * rx * scale * vec4<f32>(inPos.x, inPos.y, inPos.z, 1);
+            out.aVertexPosition =  trans * rz * ry * rx * scale * vec4<f32>(inPos.x, inPos.y, inPos.z, 1); 
+                //out.uv = inUv;
             return out;
            }
 
            @fragment
            fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
               return textureSample(Texture, TexSampler, in.uv);
+           }
+
+           @fragment
+           fn fs_main2(in: VertexOutput) -> @location(0) vec4<f32> {
+              return textureSample(Texture2, TexSampler, in.uv);
            }
 
     </script>

@@ -30,13 +30,15 @@ let verticesSize,
     leafPipeline,
     groundPoints,
     groundPipeline,
-    textureData;
+    textureData,
+    uvs;
   
   // buffers
   let myVertexBuffer = null;
   let myLeafBuffer = null;
   let myGroundBuffer = null;
   let uniformBuffer;
+  let myUvBuffer;
 
   // Other globals with default values
   var updateDisplay = true;
@@ -105,7 +107,7 @@ function setShaderInfo() {
   }
 
   // general call to make and bind a simple lsystem
-  function createParkScene(){
+  async function createParkScene(){
     // STEP 0: The floor
     
     // STEP 1: Determine how many trees will be drawn
@@ -119,12 +121,12 @@ function setShaderInfo() {
     iterations = 3;
     angleToUse = 25;
     initial_length = 0.1;
-    createTree(iterations);
+    await createTree(iterations);
     
   }
 
 
-  function createTree(iterations) {
+  async function createTree(iterations) {
 
     // Call the functions in an appropriate order
     setShaderInfo();
@@ -140,6 +142,39 @@ function setShaderInfo() {
      1, 0,  1,   
      1, 0, -1    
 ];
+// Inline uvs
+uvs = [
+    // front
+    0.0, 0.0,
+    0.0, 1.0,
+    1.0, 1.0,
+    1.0, 0.0,
+    // back
+    0.0, 0.0,
+    0.0, 1.0,
+    1.0, 1.0,
+    1.0, 0.0,
+    // left
+    0.0, 0.0,
+    0.0, 1.0,
+    1.0, 1.0,
+    1.0, 0.0,
+    // right
+    0.0, 0.0,
+    0.0, 1.0,
+    1.0, 1.0,
+    1.0, 0.0,
+    // top
+    0.0, 0.0,
+    0.0, 1.0,
+    1.0, 1.0,
+    1.0, 0.0,
+    // bottom
+    0.0, 0.0,
+    0.0, 1.0,
+    1.0, 1.0,
+    1.0, 0.0,
+];
 
     // make lsystem
     let grammar = createGrammar(iterations);
@@ -152,7 +187,7 @@ function setShaderInfo() {
         offset: 0,
         format: 'float32x3' // 3 floats: x,y,z
     };
-
+    
     // this sets up our buffer layout
     const vertexBufferLayoutDesc = {
         attributes: [vertexAttribDesc],
@@ -194,6 +229,34 @@ function setShaderInfo() {
     myVertexBuffer.unmap();
     myGroundBuffer.unmap();
 
+    // set up the uv buffer
+    // set up the attribute we'll use for the vertices
+    const uvAttribDesc = {
+        shaderLocation: 1, // @location(1) in vertex shader
+        offset: 0,
+        format: 'float32x2' // 2 floats: u,v
+    };
+
+    // this sets up our buffer layout
+    const uvBufferLayoutDesc = {
+        attributes: [uvAttribDesc],
+        arrayStride: Float32Array.BYTES_PER_ELEMENT * 2, // sizeof(float) * 2 floats
+        stepMode: 'vertex'
+    };
+
+    // buffer layout and filling
+    const uvBufferDesc = {
+        size: uvs.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+    };
+    myUvBuffer = device.createBuffer(uvBufferDesc);
+    let writeArrayUvs =
+        new Float32Array(myUvBuffer.getMappedRange());
+
+    writeArrayUvs.set(uvs); // this copies the buffer
+    myUvBuffer.unmap();
+
    
     // Set up the uniform var
     let uniformBindGroupLayout = device.createBindGroupLayout({
@@ -207,14 +270,23 @@ function setShaderInfo() {
                 binding: 1,
                 visibility: GPUShaderStage.FRAGMENT,
                 sampler: {
-                    type: "non-filtering",
+                    type: "filtering",
                 },
             },
             {
                 binding: 2,
                 visibility: GPUShaderStage.FRAGMENT,
                 texture: {
-                    sampleType: "unfilterable-float",
+                    sampleType: "float",
+                    viewDimension: "2d",
+                    multisampled: false,
+                },
+            },
+            {
+                binding: 3,
+                visibility: GPUShaderStage.FRAGMENT,
+                texture: {
+                    sampleType: "float",
                     viewDimension: "2d",
                     multisampled: false,
                 },
@@ -260,7 +332,7 @@ function setShaderInfo() {
       },
       fragment: {
         module: shaderModule,
-        entryPoint: 'fs_main',
+        entryPoint: 'fs_main2',
         targets: [colorState]
       },
       depthStencil: {
@@ -348,6 +420,24 @@ function setShaderInfo() {
             { width: kTextureWidth, height: kTextureHeight },
     );
 
+    // now create the texture to render
+    const url = './leaf_texture.jpg';
+    let imageSource = await loadImageBitmap(url);
+    let texture2 = device.createTexture({
+        label: "image",
+        format: 'rgba8unorm',
+        size: [imageSource.width, imageSource.height],
+        usage: GPUTextureUsage.TEXTURE_BINDING |
+            GPUTextureUsage.COPY_DST |
+            GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+    
+    device.queue.copyExternalImageToTexture(
+        { source: imageSource, flipY: true },
+        { texture: texture2 },
+        { width: imageSource.width, height: imageSource.height, depthOrArrayLayers: 1 },
+    );
+
     let samplerTex = device.createSampler();
 
     uniformBindGroup = device.createBindGroup({
@@ -361,11 +451,20 @@ function setShaderInfo() {
                 },
                 { binding: 1, resource: samplerTex },
                 { binding: 2, resource: texture.createView() },
+                { binding: 3, resource: texture2.createView() },
             ]
         });
 
     // indicate a redraw is required.
     updateDisplay = true;
+}
+
+// function obtained from:
+// https://webgpufundamentals.org/webgpu/lessons/webgpu-importing-textures.html
+async function loadImageBitmap(url) {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await createImageBitmap(blob, { colorSpaceConversion: 'none' });
 }
 
 // We call draw to render to our canvas
@@ -406,15 +505,17 @@ function draw() {
     commandEncoder = device.createCommandEncoder();
     passEncoder = commandEncoder.beginRenderPass(renderPassDesc);
     passEncoder.setViewport(0, 0,canvas.width, canvas.height, 0, 1);
-    passEncoder.setPipeline(pipeline);
+    
+
+    passEncoder.setPipeline(leafPipeline);
     passEncoder.setBindGroup(0, uniformBindGroup);
+    passEncoder.setVertexBuffer(0, myLeafBuffer);
+    passEncoder.setVertexBuffer(1, myUvBuffer);
+    passEncoder.draw(leafPoints.length / 3);
+
+    passEncoder.setPipeline(pipeline);
     passEncoder.setVertexBuffer(0, myVertexBuffer);
     passEncoder.draw(points.length/3);
-
-    
-    passEncoder.setPipeline(leafPipeline);
-    passEncoder.setVertexBuffer(0, myLeafBuffer);
-    passEncoder.draw(leafPoints.length / 3);
 
     passEncoder.setPipeline(groundPipeline);
     passEncoder.setVertexBuffer(0, myGroundBuffer);
@@ -439,7 +540,7 @@ async function init() {
     await initProgram();
     initializeGrammarVars();
     // create and bind your current object
-    createParkScene();
+    await createParkScene();
 
     // do a draw
     draw();
