@@ -279,7 +279,7 @@ uvs = [
 
     writeArrayUvs.set(uvs); // this copies the buffer
     myUvBuffer.unmap();
-    
+
     const myBaryBufferDesc = {
         size: bary.length * Float32Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -381,7 +381,7 @@ uvs = [
       vertex: {
         module: shaderModule,
         entryPoint: 'vs_main',
-        buffers: [vertexBufferLayoutDesc]
+        buffers: [vertexBufferLayoutDesc]//, uvBufferLayoutDesc]
       },
       fragment: {
         module: shaderModule,
@@ -557,9 +557,8 @@ function draw() {
     // create the render pass
     commandEncoder = device.createCommandEncoder();
     passEncoder = commandEncoder.beginRenderPass(renderPassDesc);
-    passEncoder.setViewport(0, 0,canvas.width, canvas.height, 0, 1);
+    passEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
     
-
     passEncoder.setPipeline(leafPipeline);
     passEncoder.setBindGroup(0, uniformBindGroup);
     passEncoder.setVertexBuffer(0, myLeafBuffer);
