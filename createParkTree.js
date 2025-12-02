@@ -148,7 +148,7 @@ function drawLeaf(position){
   // making size smaller for smaller iterations might be good too
   for(let i = 0; i <= 10; i++){
     let leafAngle = Math.floor(Math.random() * 360);
-    let leafSize = Math.random() * 0.15;
+    let leafSize = Math.random() * 0.25;
     console.log("Drawing a leaf");
     // Generate triangle size
     length = 0.025;

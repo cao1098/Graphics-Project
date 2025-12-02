@@ -113,19 +113,9 @@ function setShaderInfo() {
 
   // general call to make and bind a simple lsystem
   async function createParkScene(){
-    // STEP 0: The floor
-    
-    // STEP 1: Determine how many trees will be drawn
-    // STEP 2: for each tree drawn, generate some random params for that tree, height, # branches, etc.
-
-    // For now create one tree, w/ random params
-    // Iterations can be between 1 and 7
-    // Angle can be between 5 and 55
-    // initial length between 0.1 and 0.5
-    // trees will have a random assortment of triangles on the ends of the branches
-    iterations = 3;
-    angleToUse = 25;
-    initial_length = 0.1;
+    iterations = Math.floor(Math.random() * 5) + 1;
+    angleToUse = Math.floor(Math.random() * 51) + 5;
+    initial_length = Math.random() * 0.25 + 0.05;
     await createTree(iterations);
     
   }
@@ -173,17 +163,9 @@ uvs = [
     1.0, 1.0,
     1.0, 0.0,
 ];
-uvs = new Float32Array(528);
-for (let i = 0; i < 528; i+=8) {
-    uvs[i] = 0.0;
-    uvs[i+1] = 0.0;
-    uvs[i+2] = 0.0;
-    uvs[i+3] = 1.0;
-    uvs[i+4] = 1.0;
-    uvs[i+5] = 1.0;
-    uvs[i+6] = 1.0;
-    uvs[i+7] = 0.0;
-}
+
+
+
 uvsGround = [
     0.0, 0.0,
     0.0, 1.0,
@@ -208,6 +190,18 @@ uvsGround = [
     // make lsystem
     let grammar = createGrammar(iterations);
     drawGrammarPoints(grammar, angleToUse, initial_length);
+
+    uvs = new Float32Array(leafPoints.length / 3 * 2);
+for (let i = 0; i < uvs.length; i+=8) {
+    uvs[i] = 0.0;
+    uvs[i+1] = 0.0;
+    uvs[i+2] = 0.0;
+    uvs[i+3] = 1.0;
+    uvs[i+4] = 1.0;
+    uvs[i+5] = 1.0;
+    uvs[i+6] = 1.0;
+    uvs[i+7] = 0.0;
+}
 
     // create and bind vertex and other buffers
     // set up the attribute we'll use for the vertices
@@ -488,7 +482,7 @@ uvsGround = [
     const kTextureWidth = 7;
     const kTextureHeight = 7;
     const g = [0, 128, 0, 255];  // green
-    const l = [0, 255, 0, 255];  // white
+    const l = [150, 75, 0, 255];  // white
     const b = [0, 0, 255, 255];  // blue
 
     textureData = new Uint8Array([
