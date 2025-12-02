@@ -172,6 +172,17 @@ uvs = [
     1.0, 1.0,
     1.0, 0.0,
 ];
+uvs = new Float32Array(528);
+for (let i = 0; i < 528; i+=8) {
+    uvs[i] = 0.0;
+    uvs[i+1] = 0.0;
+    uvs[i+2] = 0.0;
+    uvs[i+3] = 1.0;
+    uvs[i+4] = 1.0;
+    uvs[i+5] = 1.0;
+    uvs[i+6] = 1.0;
+    uvs[i+7] = 0.0;
+}
     indices = [];
     bary = [];
     addTriangle(
@@ -357,7 +368,7 @@ uvs = [
         vertex: {
             module: shaderModule,
             entryPoint: 'vs_main',
-            buffers: [vertexBufferLayoutDesc]
+            buffers: [vertexBufferLayoutDesc, uvBufferLayoutDesc]
         },
         fragment: {
             module: shaderModule,
@@ -381,7 +392,7 @@ uvs = [
       vertex: {
         module: shaderModule,
         entryPoint: 'vs_main',
-        buffers: [vertexBufferLayoutDesc]//, uvBufferLayoutDesc]
+        buffers: [vertexBufferLayoutDesc, uvBufferLayoutDesc]
       },
       fragment: {
         module: shaderModule,
@@ -405,7 +416,7 @@ uvs = [
         vertex: {
             module: shaderModule,
             entryPoint: 'vs_main',
-            buffers: [vertexBufferLayoutDesc, myBaryBufferLayoutDesc]
+            buffers: [vertexBufferLayoutDesc, uvBufferLayoutDesc]
         },
         fragment: {
             module: shaderModule,
@@ -564,6 +575,8 @@ function draw() {
     passEncoder.setVertexBuffer(0, myLeafBuffer);
     passEncoder.setVertexBuffer(1, myUvBuffer);
     passEncoder.draw(leafPoints.length / 3);
+
+    console.log(leafPoints, uvs);
 
     passEncoder.setPipeline(pipeline);
     passEncoder.setVertexBuffer(0, myVertexBuffer);
