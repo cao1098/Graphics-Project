@@ -18,6 +18,7 @@
          @group(0) @binding(1) var TexSampler: sampler;
          @group(0) @binding(2) var Texture: texture_2d<f32>;
          @group(0) @binding(3) var Texture2: texture_2d<f32>;
+         @group(0) @binding(4) var Texture3: texture_2d<f32>;
 
          @vertex
             fn vs_main(
@@ -70,6 +71,11 @@
            @fragment
            fn fs_main2(in: VertexOutput) -> @location(0) vec4<f32> {
               return textureSample(Texture2, TexSampler, in.uv);
+           }
+
+           @fragment
+           fn fs_main3(in: VertexOutput) -> @location(0) vec4<f32> {
+              return textureSample(Texture3, TexSampler, in.uv);
            }
 
     </script>
