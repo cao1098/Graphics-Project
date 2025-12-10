@@ -616,6 +616,7 @@ function setShaderInfo() {
     // indicate a redraw is required.
     updateDisplay = true;
 }
+// test
 
 // function obtained from:
 // https://webgpufundamentals.org/webgpu/lessons/webgpu-importing-textures.html
