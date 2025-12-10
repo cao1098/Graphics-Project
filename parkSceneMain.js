@@ -29,7 +29,10 @@ let verticesSize,
     uniformBindGroup,
     leafPipeline,
     groundPoints,
+    waterPoints,
+    groundArr,
     groundPipeline,
+    waterPipeline,
     textureData,
     uvs,
     uvsGround,
@@ -40,6 +43,7 @@ let verticesSize,
   let myVertexBuffer = null;
   let myLeafBuffer = null;
   let myGroundBuffer = null;
+  let myWaterBuffer = null;
   let myBaryBuffer = null;
   let myIndexBuffer = null;
   let uniformBuffer;
@@ -120,6 +124,55 @@ function setShaderInfo() {
     
   }
 
+  async function createGround(iterations=3) {
+    groundArr = [
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+    ];
+
+    let water_start = Math.floor(Math.random() * 25);
+    let rand_x = Math.floor(water_start / 5);
+    let rand_y = water_start % 5;
+    groundArr[rand_x][rand_y] = 1;
+
+    let newGroundArr = [...groundArr];
+    for (let iter = 0; iter < iterations; iter++) {
+        for (let x = 0; x < groundArr.length; x++) {
+            for (let y = 0; y < groundArr.length; y++) {
+                if (groundArr[x][y] == 1)
+                    continue;
+
+                let factor = 0.01;
+
+                if (x - 1 >= 0 && groundArr[x-1][y] == 1) {
+                    factor += 0.25;
+                }
+    
+                if (x + 1 < groundArr.length && groundArr[x+1][y] == 1) {
+                    factor += 0.25;
+                }
+    
+                if (y - 1 >= 0 && groundArr[x][y-1] == 1) {
+                    factor += 0.25;
+                }
+
+                if (y + 1 < groundArr.length && groundArr[x][y+1] == 1) {
+                    factor += 0.25;
+                }
+
+                factor += Math.random();
+
+                if (factor >= 1)
+                    newGroundArr[x][y] = 1;
+            }
+        }
+        groundArr = newGroundArr;
+    }
+  }
+
 
   async function createTree(iterations) {
 
@@ -130,20 +183,28 @@ function setShaderInfo() {
     points = [];
     leafPoints = [];
     groundPoints = [];
+    waterPoints = [];
     indices = [];
     bary = [];
 
-    addTriangle(
-        -0.25, 0, -0.25,   
-        -0.25, 0,  0.25,   
-        0.25, 0, -0.25);
-    addTriangle(   
-        0.25, 0, -0.25,
-        -0.25, 0,  0.25,
-        0.25, 0, 0.25  
-        );
+    createGround();
 
-    uvsGround = [
+    for (let x = 0; x < groundArr.length; x++) {
+        for (let y = 0; y < groundArr.length; y++) {
+            addTriangle(
+                (x*0.5) + -1.25, 0, (y*0.5) + -1.25,   
+                (x*0.5) + -1.25, 0, (y*0.5) + -0.75,   
+                (x*0.5) + -0.75, 0, (y*0.5) + -1.25,
+                groundArr[x][y] == 1 ? waterPoints : groundPoints);
+            addTriangle(   
+                (x*0.5) + -0.75, 0, (y*0.5) + -1.25,
+                (x*0.5) + -1.25, 0, (y*0.5) + -0.75,
+                (x*0.5) + -0.75, 0, (y*0.5) + -0.75,
+                groundArr[x][y] == 1 ? waterPoints : groundPoints);
+        }
+    }
+
+    const uvsGroundTemplate = [
         0.0, 0.0,
         0.0, 1.0,
         1.0, 0.0,
@@ -151,6 +212,13 @@ function setShaderInfo() {
         0.0, 1.0,
         1.0, 1.0,
     ];
+    uvsGround = [];
+    for (let x = 0; x < groundArr.length; x++) {
+        for (let y = 0; y < groundArr.length; y++) {
+            if (groundArr[x][y] == 0)
+                uvsGround.push(...uvsGroundTemplate);
+        }
+    }
     
     // make lsystem
     let grammar = createGrammar(iterations);
@@ -199,23 +267,32 @@ function setShaderInfo() {
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
     };
+    const waterBufferDesc = {
+        size: waterPoints.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+    };
 
     myVertexBuffer = device.createBuffer(vertexBufferDesc);
     myLeafBuffer = device.createBuffer(leafBufferDesc);
     myGroundBuffer = device.createBuffer(groundBufferDesc);
+    myWaterBuffer = device.createBuffer(waterBufferDesc);
 
     let leafWriteArray = new Float32Array(myLeafBuffer.getMappedRange()); 
     let groundWriteArray = new Float32Array(myGroundBuffer.getMappedRange());
+    let waterWriteArray = new Float32Array(myWaterBuffer.getMappedRange());
     let writeArray =
         new Float32Array(myVertexBuffer.getMappedRange());
 
     writeArray.set(points); // this copies the buffer
     leafWriteArray.set(leafPoints);
     groundWriteArray.set(groundPoints);
+    waterWriteArray.set(waterPoints);
 
     myLeafBuffer.unmap();
     myVertexBuffer.unmap();
     myGroundBuffer.unmap();
+    myWaterBuffer.unmap();
 
     // set up the uv buffer
     const uvAttribDesc = {
@@ -420,9 +497,34 @@ function setShaderInfo() {
         }
     };
 
+    const waterPipelineDesc = {
+        layout,
+        vertex: {
+            module: shaderModule,
+            entryPoint: 'vs_main',
+            buffers: [vertexBufferLayoutDesc, uvBufferLayoutDesc]
+        },
+        fragment: {
+            module: shaderModule,
+            entryPoint: 'fs_main4',
+            targets: [colorState]
+        },
+        depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: 'less',
+            format: 'depth24plus',
+        },
+        primitive: {
+            topology: 'triangle-list',  
+            frontFace: 'cw', 
+            cullMode: 'none'
+        }
+    };
+
     pipeline = device.createRenderPipeline(pipelineDesc);
     leafPipeline = device.createRenderPipeline(leafPipelineDesc);
     groundPipeline = device.createRenderPipeline(groundPipelineDesc);
+    waterPipeline = device.createRenderPipeline(waterPipelineDesc);
 
     uniformValues = new Float32Array([0,0,0,0]);
     uniformValues[0] = angles[0];
@@ -582,6 +684,11 @@ function draw() {
     passEncoder.setIndexBuffer(myIndexBuffer, "uint16");
     passEncoder.drawIndexed(indices.length, 1);
 
+    // then water
+    passEncoder.setPipeline(waterPipeline);
+    passEncoder.setVertexBuffer(0, myWaterBuffer);
+    passEncoder.draw(waterPoints.length/3);
+
     passEncoder.end();
 
     // submit the pass to the device
@@ -607,29 +714,29 @@ async function init() {
     draw();
 }
 
-function addTriangle (x0,y0,z0,x1,y1,z1,x2,y2,z2) {
+function addTriangle (x0,y0,z0,x1,y1,z1,x2,y2,z2,arr) {
 
     
-    var nverts = groundPoints.length / 3;
+    var nverts = arr.length / 3;
     
     // push first vertex
-    groundPoints.push(x0);  bary.push (1.0);
-    groundPoints.push(y0);  bary.push (0.0);
-    groundPoints.push(z0);  bary.push (0.0);
+    arr.push(x0);  bary.push (1.0);
+    arr.push(y0);  bary.push (0.0);
+    arr.push(z0);  bary.push (0.0);
     indices.push(nverts);
     nverts++;
     
     // push second vertex
-    groundPoints.push(x1); bary.push (0.0);
-    groundPoints.push(y1); bary.push (1.0);
-    groundPoints.push(z1); bary.push (0.0);
+    arr.push(x1); bary.push (0.0);
+    arr.push(y1); bary.push (1.0);
+    arr.push(z1); bary.push (0.0);
     indices.push(nverts);
     nverts++
     
     // push third vertex
-    groundPoints.push(x2); bary.push (0.0);
-    groundPoints.push(y2); bary.push (0.0);
-    groundPoints.push(z2); bary.push (1.0);
+    arr.push(x2); bary.push (0.0);
+    arr.push(y2); bary.push (0.0);
+    arr.push(z2); bary.push (1.0);
     indices.push(nverts);
     nverts++;
 }

@@ -78,6 +78,11 @@
               return textureSample(Texture3, TexSampler, in.uv);
            }
 
+           @fragment
+           fn fs_main4(in: VertexOutput) -> @location(0) vec4<f32> {
+              return vec4<f32>(0.2, 0.5, 0.8, 1.0);
+           }
+
     </script>
    
     <!-- include the shape creation functions -->
