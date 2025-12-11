@@ -714,8 +714,8 @@ function draw() {
     // then ground
     passEncoder.setPipeline(groundPipeline);
     passEncoder.setVertexBuffer(0, myGroundBuffer);
-    passEncoder.setVertexBuffer(1, myBaryBuffer);
-    passEncoder.setVertexBuffer(1, myUvGroundBuffer);
+    //passEncoder.setVertexBuffer(1, myBaryBuffer);
+    passEncoder.setVertexBuffer(2, myUvGroundBuffer);
     passEncoder.setIndexBuffer(myIndexBuffer, "uint16");
     passEncoder.drawIndexed(indices.length, 1);
 
