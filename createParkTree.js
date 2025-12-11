@@ -87,7 +87,7 @@ function drawGrammarPoints(grammarArray, angleToUse) {
 	let rotated = [];
 
 	// always start at 0.0, 0.0, 0.25
-	let position = [0.0, 0.0, 0.25];
+	let position = [0.0, 0.0, 0.0];
 	let posx=0.0, posy = 0.0;
 	
 	// Apply the drawing rules to the string given to us
