@@ -115,14 +115,6 @@ function setShaderInfo() {
 
   }
 
-  // create the park scene
-  async function createParkScene(){
-    iterations = Math.floor(Math.random() * 5) + 1;
-    angleToUse = Math.floor(Math.random() * 51) + 5;
-    initial_length = Math.random() * 0.25 + 0.05;
-    await createTree(iterations);
-    
-  }
 
   async function createGround(iterations=3) {
     groundArr = [
@@ -174,7 +166,7 @@ function setShaderInfo() {
   }
 
 
-  async function createTree(iterations) {
+  async function createParkScene() {
 
     // Call the functions in an appropriate order
     setShaderInfo();
@@ -222,7 +214,49 @@ function setShaderInfo() {
     
     // make lsystem
     let grammar = createGrammar(iterations);
-    drawGrammarPoints(grammar, angleToUse, initial_length);
+    let treeCount = Math.floor(Math.random() * 5) + 1;
+    let leafPos = 0;
+    let treePos = 0;
+    for(let t = 0; t < treeCount; t++){
+        iterations = Math.floor(Math.random() * 5) + 1;
+        angleToUse = Math.floor(Math.random() * 51) + 5;
+        initial_length = Math.random() * 0.25 + 0.05;
+        let xOffset = Math.random() * 2 - 1;
+        let zOffset = Math.random() * 2 - 1;
+        drawGrammarPoints(grammar, angleToUse, initial_length);
+        for (let i = treePos; i < points.length; i += 3) {
+            points[i] += xOffset;    // translate X
+            points[i+2] += zOffset;  // translate Z
+        }
+        for (let i = leafPos; i < leafPoints.length; i += 3) {
+            leafPoints[i] += xOffset;    // translate X
+            leafPoints[i+2] += zOffset;  // translate Z
+        }
+        leafPos = leafPoints.length;
+        treePos = points.length;   
+    }
+
+    // BUSH CODE
+    let bushCount = Math.floor(Math.random() * 2) + 1;
+    for(let t = 0; t < bushCount; t++){
+        iterations = 2;
+        angleToUse = Math.floor(Math.random() * 51) + 5;
+        initial_length = Math.random() * 0 + 0.05;
+        let xOffset = Math.random() * 2 - 1;
+        let zOffset = Math.random() * 2 - 1;
+        drawGrammarPoints(grammar, angleToUse, initial_length);
+        for (let i = treePos; i < points.length; i += 3) {
+            points[i] += xOffset;    // translate X
+            points[i+2] += zOffset;  // translate Z
+        }
+        for (let i = leafPos; i < leafPoints.length; i += 3) {
+            leafPoints[i] += xOffset;    // translate X
+            leafPoints[i+2] += zOffset;  // translate Z
+        }
+        leafPos = leafPoints.length;
+        treePos = points.length;   
+    }
+    
 
     uvs = new Float32Array(leafPoints.length / 3 * 2);
     for (let i = 0; i < uvs.length; i+=8) {
