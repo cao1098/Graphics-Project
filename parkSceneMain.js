@@ -221,8 +221,19 @@ function setShaderInfo() {
         iterations = Math.floor(Math.random() * 5) + 1;
         angleToUse = Math.floor(Math.random() * 51) + 5;
         initial_length = Math.random() * 0.25 + 0.05;
-        let xOffset = Math.random() * 2 - 1;
-        let zOffset = Math.random() * 2 - 1;
+        let row = Math.ceil(Math.random() * 5) - 1;
+        let col = Math.ceil(Math.random() * 5) - 1;
+        if (row < 0)
+            row = 0;
+        if (col < 0)
+            col = 0;
+
+        if (groundArr[row][col] == 1)
+            continue;
+
+        let xOffset = row * 0.5 - 1;
+        let zOffset = col * 0.5 - 1;
+
         drawGrammarPoints(grammar, angleToUse, initial_length);
         for (let i = treePos; i < points.length; i += 3) {
             points[i] += xOffset;   
@@ -242,8 +253,19 @@ function setShaderInfo() {
         iterations = 2;
         angleToUse = Math.floor(Math.random() * 51) + 5;
         initial_length = Math.random() * 0 + 0.05;
-        let xOffset = Math.random() * 2 - 1;
-        let zOffset = Math.random() * 2 - 1;
+        let row = Math.ceil(Math.random() * 5) - 1;
+        let col = Math.ceil(Math.random() * 5) - 1;
+        if (row < 0)
+            row = 0;
+        if (col < 0)
+            col = 0;
+
+        if (groundArr[row][col] == 1)
+            continue;
+
+        let xOffset = row * 0.5 - 1;
+        let zOffset = col * 0.5 - 1;
+
         drawGrammarPoints(grammar, angleToUse, initial_length);
         for (let i = treePos; i < points.length; i += 3) {
             points[i] += xOffset;   
@@ -714,8 +736,7 @@ function draw() {
     // then ground
     passEncoder.setPipeline(groundPipeline);
     passEncoder.setVertexBuffer(0, myGroundBuffer);
-    //passEncoder.setVertexBuffer(1, myBaryBuffer);
-    passEncoder.setVertexBuffer(2, myUvGroundBuffer);
+    passEncoder.setVertexBuffer(1, myUvGroundBuffer);
     passEncoder.setIndexBuffer(myIndexBuffer, "uint16");
     passEncoder.drawIndexed(indices.length, 1);
 
