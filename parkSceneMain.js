@@ -225,12 +225,12 @@ function setShaderInfo() {
         let zOffset = Math.random() * 2 - 1;
         drawGrammarPoints(grammar, angleToUse, initial_length);
         for (let i = treePos; i < points.length; i += 3) {
-            points[i] += xOffset;    // translate X
-            points[i+2] += zOffset;  // translate Z
+            points[i] += xOffset;   
+            points[i+2] += zOffset; 
         }
         for (let i = leafPos; i < leafPoints.length; i += 3) {
-            leafPoints[i] += xOffset;    // translate X
-            leafPoints[i+2] += zOffset;  // translate Z
+            leafPoints[i] += xOffset;    
+            leafPoints[i+2] += zOffset; 
         }
         leafPos = leafPoints.length;
         treePos = points.length;   
@@ -246,12 +246,12 @@ function setShaderInfo() {
         let zOffset = Math.random() * 2 - 1;
         drawGrammarPoints(grammar, angleToUse, initial_length);
         for (let i = treePos; i < points.length; i += 3) {
-            points[i] += xOffset;    // translate X
-            points[i+2] += zOffset;  // translate Z
+            points[i] += xOffset;   
+            points[i+2] += zOffset; 
         }
         for (let i = leafPos; i < leafPoints.length; i += 3) {
-            leafPoints[i] += xOffset;    // translate X
-            leafPoints[i+2] += zOffset;  // translate Z
+            leafPoints[i] += xOffset;    
+            leafPoints[i+2] += zOffset; 
         }
         leafPos = leafPoints.length;
         treePos = points.length;   
